@@ -1,0 +1,77 @@
+# -----------------------------
+# Python cache / compiled files
+# -----------------------------
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# -----------------------------
+# Virtual environments
+# -----------------------------
+venv/
+venv311/
+.venv/
+env/
+
+# -----------------------------
+# Large ML model files
+# -----------------------------
+*.h5
+*.keras
+*.pth
+*.pt
+*.pkl
+*.joblib
+*.ckpt
+*.pb
+
+# -----------------------------
+# TensorFlow / PyTorch model folders
+# -----------------------------
+backend/model/fruit_saved_model_old/
+backend/model/fruit_saved_model/
+backend/uploads/
+models/
+weights/
+checkpoints/
+
+# -----------------------------
+# Dataset / training data
+# -----------------------------
+dataset/
+data/
+train/
+test/
+validation/
+archive/
+
+# -----------------------------
+# Jupyter Notebook
+# -----------------------------
+.ipynb_checkpoints/
+
+# -----------------------------
+# Logs / temp files
+# -----------------------------
+*.log
+temp/
+tmp/
+
+# -----------------------------
+# IDE / Editor files
+# -----------------------------
+.vscode/
+.idea/
+
+# -----------------------------
+# OS generated files
+# -----------------------------
+.DS_Store
+Thumbs.db
+
+# -----------------------------
+# Environment / secrets
+# -----------------------------
+.env
+.env.local

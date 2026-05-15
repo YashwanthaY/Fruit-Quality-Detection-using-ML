@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FreshSense — AI Fruit Quality Detection</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="style.css"/>
+  <link rel="stylesheet" href="lang.css"/>
+</head>
+<body>
+
+<!-- ═══════════════ NAVBAR ═══════════════ -->
+<nav class="navbar" id="navbar">
+  <a href="#hero" class="nav-logo">
+    <span class="logo-mark">🌿</span>
+    <span>FreshSense</span>
+  </a>
+  <ul class="nav-links" id="navLinks">
+    <li><a href="#detect"       data-i18n="nav_detect">Detect</a></li>
+    <li><a href="#how-it-works" data-i18n="nav_how">How It Works</a></li>
+    <li><a href="#gallery"      data-i18n="nav_gallery">Gallery</a></li>
+
+    <!-- ── LANGUAGE SWITCHER ── -->
+    <li class="lang-switcher" id="langSwitcher">
+      <button class="lang-btn" id="langBtn" aria-label="Select language">
+        <span class="lang-globe">🌐</span>
+        <span class="lang-current" id="langCurrent">EN</span>
+        <span class="lang-arrow">▾</span>
+      </button>
+      <ul class="lang-dropdown" id="langDropdown">
+        <li><button class="lang-option active" data-lang="en"><span>🇬🇧</span> English</button></li>
+        <li><button class="lang-option" data-lang="kn"><span>🇮🇳</span> ಕನ್ನಡ</button></li>
+        <li><button class="lang-option" data-lang="hi"><span>🇮🇳</span> हिंदी</button></li>
+        <li><button class="lang-option" data-lang="ta"><span>🇮🇳</span> தமிழ்</button></li>
+        <li><button class="lang-option" data-lang="te"><span>🇮🇳</span> తెలుగు</button></li>
+      </ul>
+    </li>
+
+    <li><a href="https://github.com" target="_blank" class="nav-cta" data-i18n="nav_github">GitHub ↗</a></li>
+  </ul>
+  <button class="hamburger" id="hamburger" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<!-- ═══════════════ HERO ═══════════════ -->
+<section class="hero" id="hero">
+  <div class="hero-canvas">
+    <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
+    <div class="noise"></div>
+  </div>
+  <div class="hero-body">
+    <div class="pill-badge">
+      <span class="pulse-dot"></span>
+      <span data-i18n="hero_badge">AI-Powered Agricultural Intelligence</span>
+    </div>
+    <h1 class="hero-h1">
+      <span data-i18n="hero_title1">Know Your Fruit.</span><br/>
+      <em data-i18n="hero_title2">Protect Your Harvest.</em>
+    </h1>
+    <p class="hero-p" data-i18n="hero_sub">
+      Upload a fruit photo or describe its condition — get an instant quality score, shelf-life estimate, and expert storage tips powered by deep learning.
+    </p>
+    <div class="hero-actions">
+      <a href="#detect" class="btn-amber">
+        <span data-i18n="hero_btn1">Analyse a Fruit</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </a>
+      <a href="#how-it-works" class="btn-ghost" data-i18n="hero_btn2">See How It Works</a>
+    </div>
+  </div>
+  <div class="hero-floats" aria-hidden="true">
+    <span class="hf hf1">🍎</span><span class="hf hf2">🍊</span>
+    <span class="hf hf3">🍋</span><span class="hf hf4">🍇</span>
+    <span class="hf hf5">🥭</span><span class="hf hf6">🍓</span>
+    <span class="hf hf7">🍌</span>
+  </div>
+  <div class="hero-stats">
+    <div class="hstat"><span class="hstat-n">98.2%</span><span class="hstat-l" data-i18n="stat_accuracy">Accuracy</span></div>
+    <div class="hstat-sep"></div>
+    <div class="hstat"><span class="hstat-n">120+</span><span class="hstat-l" data-i18n="stat_varieties">Fruit Varieties</span></div>
+    <div class="hstat-sep"></div>
+    <div class="hstat"><span class="hstat-n">&lt; 2s</span><span class="hstat-l" data-i18n="stat_time">Analysis Time</span></div>
+    <div class="hstat-sep"></div>
+    <div class="hstat"><span class="hstat-n">∞</span><span class="hstat-l" data-i18n="stat_users">Concurrent Users</span></div>
+  </div>
+</section>
+
+<!-- ═══════════════ DETECT ═══════════════ -->
+<section class="section detect-section" id="detect">
+  <div class="wrap">
+    <div class="sec-label" data-i18n="detect_label">Step 1 — Input</div>
+    <h2 class="sec-title" data-i18n="detect_title">Upload or Describe Your Fruit</h2>
+    <p class="sec-sub" data-i18n="detect_sub">Image upload gives the most accurate result.</p>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="image" data-i18n="tab_image">📷 Image Upload</button>
+      <button class="tab" data-tab="manual" data-i18n="tab_manual">✏️ Manual Input</button>
+    </div>
+
+    <!-- IMAGE TAB -->
+    <div class="tab-panel active" id="tab-image">
+      <div class="dropzone" id="dropzone" role="button" tabindex="0">
+        <div class="dz-inner" id="dzInner">
+          <div class="dz-icon-ring">
+            <div class="dz-icon">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+            </div>
+          </div>
+          <p class="dz-title" data-i18n="dz_title">Drag & drop a fruit image here</p>
+          <p class="dz-sub"   data-i18n="dz_sub">JPG · PNG · WEBP · up to 10 MB</p>
+          <label class="btn-outline" for="fileInput" data-i18n="dz_browse">Browse Files</label>
+          <input type="file" id="fileInput" accept="image/*" hidden/>
+        </div>
+        <div class="dz-preview" id="dzPreview" style="display:none">
+          <img id="previewImg" src="" alt="Preview"/>
+          <button class="dz-remove" id="dzRemove" type="button">✕</button>
+        </div>
+      </div>
+      <button class="btn-analyze" id="btnAnalyzeImage" disabled>
+        <span class="ba-text" data-i18n="btn_analyze">🔍 Analyse Fruit Quality</span>
+        <span class="ba-spin" style="display:none"><span class="spinner"></span> <span data-i18n="btn_analyzing">Analysing…</span></span>
+      </button>
+    </div>
+
+    <!-- MANUAL TAB -->
+    <div class="tab-panel" id="tab-manual">
+      <div class="manual-card">
+        <div class="mform-grid">
+          <div class="fg">
+            <label data-i18n="label_fruit">Fruit Type</label>
+            <select id="fruitType">
+              <option value="" data-i18n="opt_select">— Select —</option>
+              <option value="apple"       data-i18n="fruit_apple">🍎 Apple</option>
+              <option value="banana"      data-i18n="fruit_banana">🍌 Banana</option>
+              <option value="mango"       data-i18n="fruit_mango">🥭 Mango</option>
+              <option value="orange"      data-i18n="fruit_orange">🍊 Orange</option>
+              <option value="grape"       data-i18n="fruit_grape">🍇 Grape</option>
+              <option value="strawberry"  data-i18n="fruit_strawberry">🍓 Strawberry</option>
+              <option value="papaya"      data-i18n="fruit_papaya">🍈 Papaya</option>
+              <option value="watermelon"  data-i18n="fruit_watermelon">🍉 Watermelon</option>
+              <option value="guava"       data-i18n="fruit_guava">🍐 Guava</option>
+              <option value="pineapple"   data-i18n="fruit_pineapple">🍍 Pineapple</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label data-i18n="label_color">Colour Appearance</label>
+            <select id="fruitColor">
+              <option value=""            data-i18n="opt_select">— Select —</option>
+              <option value="vibrant"     data-i18n="color_vibrant">✅ Vibrant / Bright</option>
+              <option value="normal"      data-i18n="color_normal">🟡 Normal</option>
+              <option value="dull"        data-i18n="color_dull">🟠 Dull / Faded</option>
+              <option value="brown_spots" data-i18n="color_brown">🟤 Brown Spots</option>
+              <option value="black_mold"  data-i18n="color_mold">⚫ Black Mould Visible</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label data-i18n="label_texture">Texture / Firmness</label>
+            <select id="fruitTexture">
+              <option value=""             data-i18n="opt_select">— Select —</option>
+              <option value="firm"         data-i18n="texture_firm">💪 Firm & Crisp</option>
+              <option value="slightly_soft"data-i18n="texture_slight">🤏 Slightly Soft</option>
+              <option value="soft"         data-i18n="texture_soft">🫢 Soft / Mushy</option>
+              <option value="wrinkled"     data-i18n="texture_wrinkled">😬 Wrinkled</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label data-i18n="label_smell">Smell</label>
+            <select id="fruitSmell">
+              <option value=""          data-i18n="opt_select">— Select —</option>
+              <option value="fresh"     data-i18n="smell_fresh">😊 Fresh & Pleasant</option>
+              <option value="mild"      data-i18n="smell_mild">😐 Mild / Normal</option>
+              <option value="fermented" data-i18n="smell_fermented">🥴 Fermented / Sour</option>
+              <option value="bad"       data-i18n="smell_bad">🤢 Foul / Rotten</option>
+            </select>
+          </div>
+        </div>
+        <div class="fg fg-full">
+          <label data-i18n="label_days">Days Since Harvest — <span class="slider-display" id="sliderDisplay">3 days</span></label>
+          <input type="range" id="daysSince" min="0" max="30" value="3" class="slider"/>
+        </div>
+        <button class="btn-analyze" id="btnAnalyzeManual">
+          <span class="ba-text" data-i18n="btn_analyze">🔍 Analyse Fruit Quality</span>
+          <span class="ba-spin" style="display:none"><span class="spinner"></span> <span data-i18n="btn_analyzing">Analysing…</span></span>
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ RESULTS ═══════════════ -->
+<section class="section results-section" id="results" hidden>
+  <div class="wrap">
+    <div class="sec-label" data-i18n="results_label">Analysis Complete</div>
+    <h2 class="sec-title" data-i18n="results_title">Quality Report</h2>
+
+    <div class="results-top">
+      <div class="quality-badge" id="qBadge">
+        <div class="qb-emoji" id="qbEmoji">🟢</div>
+        <div class="qb-grade" id="qbGrade">GOOD</div>
+        <div class="qb-label" id="qbLabel">High Quality — Safe to Consume</div>
+        <div class="qb-fruit" id="qbFruit">Apple</div>
+      </div>
+      <div class="score-ring-wrap">
+        <canvas id="donutChart" width="200" height="200"></canvas>
+        <div class="score-center">
+          <span class="score-pct" id="scorePct">92%</span>
+          <span class="score-lbl" data-i18n="score_label">Quality Score</span>
+        </div>
+      </div>
+      <div class="shelf-card" id="shelfCard">
+        <div class="shelf-icon">📅</div>
+        <div class="shelf-label" data-i18n="shelf_label">Estimated Shelf Life</div>
+        <div class="shelf-value" id="shelfValue">7–10 Days</div>
+        <div class="shelf-bar-track"><div class="shelf-bar-fill" id="shelfBarFill"></div></div>
+        <div class="shelf-note" id="shelfNote">Store properly to maximise freshness</div>
+      </div>
+    </div>
+
+    <div class="result-cards">
+      <div class="rcard rcard-tips">
+        <div class="rcard-head"><span class="rcard-ico">🛡️</span> <span data-i18n="tips_title">Storage & Protection Tips</span></div>
+        <ul class="tips-list" id="tipsList"></ul>
+      </div>
+      <div class="rcard rcard-conf">
+        <div class="rcard-head"><span class="rcard-ico">📊</span> <span data-i18n="conf_title">Model Confidence Breakdown</span></div>
+        <canvas id="confChart" height="150"></canvas>
+      </div>
+      <div class="rcard rcard-rec">
+        <div class="rcard-head"><span class="rcard-ico">💡</span> <span data-i18n="rec_title">Recommendation</span></div>
+        <p class="rec-text" id="recText"></p>
+        <div class="rec-action" id="recAction"></div>
+      </div>
+    </div>
+
+    <div class="full-report">
+      <div class="fr-head">
+        <h3 data-i18n="report_title">📋 Detailed Analysis Report</h3>
+        <span class="fr-time" id="frTime"></span>
+      </div>
+      <div class="fr-grid">
+        <div class="fr-row"><span class="fr-key" data-i18n="report_fruit">Fruit Detected</span><span class="fr-val" id="frFruit">—</span></div>
+        <div class="fr-row"><span class="fr-key" data-i18n="report_class">Quality Class</span><span class="fr-val" id="frClass">—</span></div>
+        <div class="fr-row"><span class="fr-key" data-i18n="report_score">Quality Score</span><span class="fr-val" id="frScore">—</span></div>
+        <div class="fr-row"><span class="fr-key" data-i18n="report_conf">Confidence</span><span class="fr-val" id="frConf">—</span></div>
+        <div class="fr-row"><span class="fr-key" data-i18n="report_shelf">Shelf Life</span><span class="fr-val" id="frShelf">—</span></div>
+        <div class="fr-row"><span class="fr-key" data-i18n="report_rec">Recommendation</span><span class="fr-val" id="frRec">—</span></div>
+      </div>
+    </div>
+
+    <div class="results-footer-btns">
+      <button class="btn-amber" id="btnAnother" data-i18n="btn_another">🔄 Analyse Another Fruit</button>
+      <button class="btn-outline-dark" id="btnDownload" data-i18n="btn_download">📥 Download Report</button>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ HOW IT WORKS ═══════════════ -->
+<section class="section how-section" id="how-it-works">
+  <div class="wrap">
+    <div class="sec-label" data-i18n="how_label">Process</div>
+    <h2 class="sec-title" data-i18n="how_title">How FreshSense Works</h2>
+    <p class="sec-sub" data-i18n="how_sub">Three steps from harvest to insight.</p>
+    <div class="steps">
+      <div class="step" data-n="01">
+        <div class="step-bubble">📤</div>
+        <h3 data-i18n="step1_title">Upload Image</h3>
+        <p data-i18n="step1_desc">Drag a clear photo of your fruit, or fill in the manual form.</p>
+      </div>
+      <div class="step-arrow">→</div>
+      <div class="step" data-n="02">
+        <div class="step-bubble">🧠</div>
+        <h3 data-i18n="step2_title">AI Analysis</h3>
+        <p data-i18n="step2_desc">MobileNetV2 CNN processes the image. Every request runs independently.</p>
+      </div>
+      <div class="step-arrow">→</div>
+      <div class="step" data-n="03">
+        <div class="step-bubble">📊</div>
+        <h3 data-i18n="step3_title">Your Report</h3>
+        <p data-i18n="step3_desc">Receive a full dashboard in under 2 seconds.</p>
+      </div>
+    </div>
+    <div class="tech-row">
+      <span class="tech-chip">Python 3.11</span>
+      <span class="tech-chip">TensorFlow 2.x</span>
+      <span class="tech-chip">MobileNetV2</span>
+      <span class="tech-chip">Transfer Learning</span>
+      <span class="tech-chip">Flask REST API</span>
+      <span class="tech-chip">Chart.js 4</span>
+      <span class="tech-chip">Fruits-360 Dataset</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ GALLERY ═══════════════ -->
+<section class="section gallery-section" id="gallery">
+  <div class="wrap">
+    <div class="sec-label" data-i18n="gallery_label">Examples</div>
+    <h2 class="sec-title" data-i18n="gallery_title">Sample Predictions</h2>
+    <p class="sec-sub" data-i18n="gallery_sub">Real model outputs across quality conditions.</p>
+    <div class="gallery">
+      <div class="gcard good"><div class="gc-emoji">🍎</div><div class="gc-info"><div class="gc-name">Apple</div><span class="gc-badge good" data-i18n="quality_good">GOOD</span><div class="gc-score">94% confidence · 8 days</div></div></div>
+      <div class="gcard inter"><div class="gc-emoji">🍌</div><div class="gc-info"><div class="gc-name">Banana</div><span class="gc-badge inter" data-i18n="quality_inter">INTERMEDIATE</span><div class="gc-score">81% confidence · 4 days</div></div></div>
+      <div class="gcard bad"><div class="gc-emoji">🍊</div><div class="gc-info"><div class="gc-name">Orange</div><span class="gc-badge bad" data-i18n="quality_bad">BAD</span><div class="gc-score">96% confidence · 0–1 days</div></div></div>
+      <div class="gcard good"><div class="gc-emoji">🍇</div><div class="gc-info"><div class="gc-name">Grapes</div><span class="gc-badge good" data-i18n="quality_good">GOOD</span><div class="gc-score">97% confidence · 10 days</div></div></div>
+      <div class="gcard inter"><div class="gc-emoji">🥭</div><div class="gc-info"><div class="gc-name">Mango</div><span class="gc-badge inter" data-i18n="quality_inter">INTERMEDIATE</span><div class="gc-score">78% confidence · 3 days</div></div></div>
+      <div class="gcard good"><div class="gc-emoji">🍓</div><div class="gc-info"><div class="gc-name">Strawberry</div><span class="gc-badge good" data-i18n="quality_good">GOOD</span><div class="gc-score">91% confidence · 7 days</div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ FOOTER ═══════════════ -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="nav-logo"><span class="logo-mark">🌿</span><span>FreshSense</span></div>
+      <p data-i18n="footer_tagline">AI-powered fruit quality detection for modern agriculture.</p>
+    </div>
+    <div class="footer-links">
+      <div class="fc">
+        <div class="fc-title" data-i18n="footer_project">Project</div>
+        <a href="#detect"       data-i18n="nav_detect">Analyse Fruit</a>
+        <a href="#how-it-works" data-i18n="nav_how">How It Works</a>
+        <a href="#gallery"      data-i18n="nav_gallery">Samples</a>
+      </div>
+      <div class="fc">
+        <div class="fc-title" data-i18n="footer_stack">Stack</div>
+        <a href="https://tensorflow.org" target="_blank">TensorFlow</a>
+        <a href="https://flask.palletsprojects.com" target="_blank">Flask</a>
+        <a href="https://chartjs.org" target="_blank">Chart.js</a>
+      </div>
+      <div class="fc">
+        <div class="fc-title" data-i18n="footer_links">Links</div>
+        <a href="https://github.com" target="_blank">GitHub ↗</a>
+        <a href="https://linkedin.com" target="_blank">LinkedIn ↗</a>
+        <a href="https://kaggle.com" target="_blank">Dataset ↗</a>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bar">
+    <span data-i18n="footer_bottom">Built with Python · TensorFlow · Flask · Chart.js</span>
+    <span>© 2025 FreshSense</span>
+  </div>
+</footer>
+
+<script src="translations.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

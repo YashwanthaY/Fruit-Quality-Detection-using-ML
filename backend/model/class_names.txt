@@ -1,0 +1,16 @@
+freshapples
+freshbanana
+freshgrapes
+freshkiwi
+freshmango
+freshoranges
+freshpear
+freshpineapple
+rottenapples
+rottenbanana
+rottengrapes
+rottenkiwi
+rottenmango
+rottenoranges
+rottenpear
+rottenpineapple
