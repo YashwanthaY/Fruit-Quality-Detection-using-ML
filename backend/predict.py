@@ -1,6 +1,6 @@
 """
-FreshSense — predict.py (FINAL)
-Fixes: TFSMLayer output parsing, fruit name, quality detection
+FreshSense — predict.py (v4 FINAL)
+Supports: 16 classes, ripeness % score, TFSMLayer with 'serve' endpoint
 """
 
 import os
@@ -15,9 +15,24 @@ STORAGE_TIPS = {
     "banana":      ["Store at room temperature on a banana hanger",
                     "Never refrigerate unripe bananas",
                     "Once ripe, refrigerate to extend 2-3 days"],
+    "grapes":      ["Keep unwashed in original ventilated packaging in fridge",
+                    "Wash only right before eating",
+                    "Store away from strong-smelling foods"],
+    "kiwi":        ["Store unripe kiwi at room temperature",
+                    "Once ripe, refrigerate for up to 2 weeks",
+                    "Do not store near ethylene-producing fruits"],
+    "mango":       ["Ripen at room temperature first, then refrigerate",
+                    "Place in a paper bag to speed up ripening",
+                    "Cut mango keeps in airtight container for 3-4 days"],
     "orange":      ["Store in fridge crisper for up to 3 weeks",
                     "Never seal in airtight bags — needs airflow",
                     "Room temperature oranges last 1-2 weeks"],
+    "pear":        ["Store unripe pears at room temperature",
+                    "Refrigerate once ripe to extend shelf life",
+                    "Keep away from strong-smelling foods"],
+    "pineapple":   ["Store upside-down to redistribute natural juices",
+                    "Refrigerate cut pineapple in airtight container",
+                    "Freeze pineapple chunks for up to 6 months"],
     "default":     ["Keep in cool dry place away from sunlight",
                     "Store separately from other fruits",
                     "Check daily and remove damaged pieces"]
@@ -35,7 +50,6 @@ RECOMMENDATIONS = {
     "bad":          "Not safe for consumption. Discard immediately.",
 }
 
-# ── EXACT label map — matches dataset folder names ────────
 LABEL_MAP = {
     "freshapples":      ("Apple",       "good"),
     "freshbanana":      ("Banana",      "good"),
@@ -55,6 +69,8 @@ LABEL_MAP = {
     "rottenpineapple":  ("Pineapple",   "bad"),
 }
 
+LOW_CONFIDENCE_CLASSES = ["kiwi", "pear", "pineapple"]
+
 # ── Model + class names ───────────────────────────────────
 _model       = None
 _class_names = []
@@ -67,8 +83,7 @@ def _load_class_names():
             _class_names = [l.strip() for l in f if l.strip()]
         print(f"Class names loaded: {_class_names}")
     else:
-        _class_names = ["freshapples","freshbanana","freshoranges",
-                        "rottenapples","rottenbanana","rottenoranges"]
+        _class_names = list(LABEL_MAP.keys())
         print(f"Using default class names: {_class_names}")
 
 def _load_model():
@@ -77,23 +92,18 @@ def _load_model():
         return _model
 
     import tensorflow as tf
-    base_dir = os.path.dirname(__file__)
+    base_dir   = os.path.dirname(__file__)
     saved_path = os.path.join(base_dir, "model", "fruit_saved_model")
 
     if os.path.exists(saved_path):
         try:
             _model = tf.keras.layers.TFSMLayer(
                 saved_path,
-                call_endpoint="serving_default"
+                call_endpoint="serve"
             )
-            # Warm up the model with a dummy input to get output keys
             dummy = tf.zeros([1, 224, 224, 3])
             out   = _model(dummy, training=False)
             print(f"Model loaded! Output type: {type(out)}")
-            if isinstance(out, dict):
-                print(f"Output keys: {list(out.keys())}")
-                for k, v in out.items():
-                    print(f"  key={k} shape={v.shape}")
             return _model
         except Exception as e:
             print(f"Failed to load model: {e}")
@@ -121,28 +131,20 @@ def predict_from_image(image_path: str) -> dict:
 
         output = model(arr, training=False)
 
-        # TFSMLayer returns dict — find the predictions tensor
+        # Handle both dict and direct tensor output
         if isinstance(output, dict):
-            # Print all keys and shapes for debugging
-            print(f"Output dict keys: {list(output.keys())}")
-            for k, v in output.items():
-                print(f"  {k}: shape={v.shape}, values={v.numpy()[0][:3]}...")
-
-            # Get the tensor with shape matching num classes
             preds = None
             for k, v in output.items():
                 arr_v = v.numpy()[0]
                 if len(arr_v) == len(_class_names):
                     preds = arr_v
-                    print(f"Using key '{k}' with {len(arr_v)} classes")
                     break
-
             if preds is None:
-                # Just take first value
                 preds = list(output.values())[0].numpy()[0]
-                print(f"Fallback: using first key, shape={preds.shape}")
-        else:
+        elif hasattr(output, 'numpy'):
             preds = output.numpy()[0]
+        else:
+            preds = np.array(output)[0]
 
         print(f"Predictions: {[(c, f'{p*100:.1f}%') for c,p in zip(_class_names, preds)]}")
 
@@ -158,21 +160,64 @@ def predict_from_image(image_path: str) -> dict:
         fruit_name, quality = _map_label(label)
         print(f"MAPPED: fruit={fruit_name}, quality={quality}")
 
-        quality_pct = int(top_conf * 100) if quality == "good" else max(5, int((1-top_conf)*100))
+        # Smart correction — if model picks rottenoranges but
+        # another rotten class has meaningful confidence, use that
+        if label == "rottenoranges" and top_conf < 0.98:
+            rotten_scores = {
+                c: float(preds[i])
+                for i, c in enumerate(_class_names)
+                if "rotten" in c and c != "rottenoranges"
+            }
+            second_best = max(rotten_scores, key=rotten_scores.get)
+            second_conf = rotten_scores[second_best]
+            if second_conf > 0.05:
+                label      = second_best
+                fruit_name, quality = _map_label(label)
+                print(f"CORRECTED to: {label} ({second_conf*100:.1f}%)")
+
+        # ── Ripeness % calculation ────────────────────────
+        fruit_key    = fruit_name.lower()
+        fresh_label  = "fresh"  + fruit_key
+        rotten_label = "rotten" + fruit_key
+
+        # Handle plural class names e.g. freshapples, freshoranges
+        if fresh_label not in _class_names:
+            fresh_label  = "fresh"  + fruit_key + "s"
+            rotten_label = "rotten" + fruit_key + "s"
 
         good_conf   = float(sum(preds[i] for i,l in enumerate(_class_names) if "fresh"  in l.lower()))
         rotten_conf = float(sum(preds[i] for i,l in enumerate(_class_names) if "rotten" in l.lower()))
         inter_conf  = max(0.0, 1.0 - good_conf - rotten_conf)
-        total       = good_conf + inter_conf + rotten_conf or 1.0
+        total_all   = good_conf + inter_conf + rotten_conf or 1.0
+
+        # Get fruit-specific fresh and rotten scores
+        f_conf = float(preds[_class_names.index(fresh_label)])  if fresh_label  in _class_names else good_conf
+        r_conf = float(preds[_class_names.index(rotten_label)]) if rotten_label in _class_names else rotten_conf
+
+        # Ripeness = fresh / (fresh + rotten) × 100
+        total_fruit = f_conf + r_conf or 1.0
+        quality_pct = int((f_conf / total_fruit) * 100)
+        quality_pct = max(5, min(98, quality_pct))
+
+        # Ripeness label based on score
+        if quality_pct >= 80:
+            ripeness_label = "Peak Freshness"
+        elif quality_pct >= 55:
+            ripeness_label = "Good — Slightly Past Peak"
+        elif quality_pct >= 30:
+            ripeness_label = "Declining — Use Soon"
+        else:
+            ripeness_label = "Spoiled — Discard"
 
         return _build_result(
-            quality_label = quality,
-            quality_pct   = max(0, min(100, quality_pct)),
-            conf_score    = int(top_conf * 100),
-            fruit_type    = fruit_name,
-            good_pct      = int(good_conf   / total * 100),
-            int_pct       = int(inter_conf  / total * 100),
-            bad_pct       = int(rotten_conf / total * 100),
+            quality_label  = quality,
+            quality_pct    = quality_pct,
+            ripeness_label = ripeness_label,
+            conf_score     = int(top_conf * 100),
+            fruit_type     = fruit_name,
+            good_pct       = int(good_conf   / total_all * 100),
+            int_pct        = int(inter_conf  / total_all * 100),
+            bad_pct        = int(rotten_conf / total_all * 100),
         )
 
     except Exception as e:
@@ -202,14 +247,32 @@ def predict_from_manual(inputs: dict) -> dict:
     elif pen >= 2: quality = "intermediate"
     else:          quality = "good"
 
-    pct  = max(0, int(100 - (pen/15)*100))
+    pct  = max(5, int(100 - (pen/15)*100))
     conf = min(95, 65 + abs(pen-7)*3)
+
+    if quality_pct >= 80:
+        ripeness_label = "Peak Freshness"
+    elif pct >= 55:
+        ripeness_label = "Good — Slightly Past Peak"
+    elif pct >= 30:
+        ripeness_label = "Declining — Use Soon"
+    else:
+        ripeness_label = "Spoiled — Discard"
+
     if   quality=="good":         g,i,b = conf,(100-conf)//2,(100-conf)//2
     elif quality=="intermediate": g,i,b = (100-conf)//2,conf,(100-conf)//2
     else:                         g,i,b = (100-conf)//2,(100-conf)//2,conf
 
-    return _build_result(quality_label=quality, quality_pct=pct, conf_score=conf,
-                         fruit_type=fruit, good_pct=g, int_pct=i, bad_pct=b)
+    return _build_result(
+        quality_label  = quality,
+        quality_pct    = pct,
+        ripeness_label = ripeness_label,
+        conf_score     = conf,
+        fruit_type     = fruit,
+        good_pct       = g,
+        int_pct        = i,
+        bad_pct        = b
+    )
 
 
 # ── helpers ───────────────────────────────────────────────
@@ -217,29 +280,36 @@ def _map_label(label: str):
     lw = label.lower().strip()
     if lw in LABEL_MAP:
         return LABEL_MAP[lw]
-    # fallback
-    fruit = lw.replace("fresh","").replace("rotten","").capitalize()
+    fruit   = lw.replace("fresh","").replace("rotten","").capitalize()
     quality = "bad" if "rotten" in lw else "good"
     return (fruit, quality)
 
-def _build_result(quality_label, quality_pct, conf_score,
-                  fruit_type, good_pct, int_pct, bad_pct) -> dict:
-    shelf = SHELF_LIFE.get(quality_label, SHELF_LIFE["good"])
-    tips  = STORAGE_TIPS.get(fruit_type.lower(), STORAGE_TIPS["default"])
+def _build_result(quality_label, quality_pct, ripeness_label,
+                  conf_score, fruit_type, good_pct, int_pct, bad_pct) -> dict:
+    shelf      = SHELF_LIFE.get(quality_label, SHELF_LIFE["good"])
+    tips       = STORAGE_TIPS.get(fruit_type.lower(), STORAGE_TIPS["default"])
+    disclaimer = None
+    if quality_label == "bad" and fruit_type.lower() in LOW_CONFIDENCE_CLASSES:
+        disclaimer = (
+            f"⚠️ Note: Rotten {fruit_type} detection has limited training data. "
+            f"Please verify visually — check for soft spots, mold, or bad smell."
+        )
     return {
         "quality_label":        quality_label,
         "quality_percentage":   quality_pct,
+        "ripeness_label":       ripeness_label,
         "confidence_score":     conf_score,
         "shelf_life_days":      shelf["text"],
         "shelf_life_numeric":   shelf["days"],
         "storage_tips":         tips,
         "fruit_type":           fruit_type,
         "recommendation":       RECOMMENDATIONS[quality_label],
-        "confidence_breakdown": {"good":good_pct,"intermediate":int_pct,"bad":bad_pct}
+        "confidence_breakdown": {"good":good_pct,"intermediate":int_pct,"bad":bad_pct},
+        "disclaimer":           disclaimer
     }
 
 def _demo_result() -> dict:
-    fruits = ["Apple","Banana","Orange"]
+    fruits = ["Apple","Banana","Orange","Mango","Grapes"]
     labels = ["good","good","intermediate","bad"]
     fruit  = random.choice(fruits)
     label  = random.choice(labels)
@@ -248,5 +318,19 @@ def _demo_result() -> dict:
     if   label=="good":         g,i,b=pct,(100-pct)//2,(100-pct)//2
     elif label=="intermediate": g,i,b=(100-pct)//2,pct,(100-pct)//2
     else:                       g,i,b=(100-pct)//2,(100-pct)//2,pct
-    return _build_result(quality_label=label,quality_pct=pct,conf_score=pct,
-                         fruit_type=fruit,good_pct=g,int_pct=i,bad_pct=b)
+
+    if pct >= 80:   rl = "Peak Freshness"
+    elif pct >= 55: rl = "Good — Slightly Past Peak"
+    elif pct >= 30: rl = "Declining — Use Soon"
+    else:           rl = "Spoiled — Discard"
+
+    return _build_result(
+        quality_label  = label,
+        quality_pct    = pct,
+        ripeness_label = rl,
+        conf_score     = pct,
+        fruit_type     = fruit,
+        good_pct       = g,
+        int_pct        = i,
+        bad_pct        = b
+    )

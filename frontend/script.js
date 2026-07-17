@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════
-   FRESHSENSE  ·  script.js   (FIXED v3)
+   FRESHSENSE  ·  script.js   (v4 FINAL)
    ══════════════════════════════════════════════════════════ */
 "use strict";
 
@@ -22,21 +22,24 @@ const TIPS = {
   grape:       ["Keep unwashed in original ventilated packaging in fridge",
                 "Wash only right before eating — moisture speeds decay",
                 "Store away from strong-smelling foods"],
-  strawberry:  ["Refrigerate in a single layer on dry paper towels",
-                "Do not wash until you are ready to eat",
-                "Remove any damaged berries immediately to stop spread"],
-  papaya:      ["Ripen at room temperature away from direct sunlight",
-                "Refrigerate once ripe and consume within 2 days",
-                "Wrap cut papaya tightly before refrigerating"],
+  grapes:      ["Keep unwashed in original ventilated packaging in fridge",
+                "Wash only right before eating — moisture speeds decay",
+                "Store away from strong-smelling foods"],
+  kiwi:        ["Store unripe kiwi at room temperature",
+                "Once ripe, refrigerate for up to 2 weeks",
+                "Do not store near ethylene-producing fruits"],
+  pear:        ["Store unripe pears at room temperature",
+                "Refrigerate once ripe to extend shelf life",
+                "Keep away from strong-smelling foods"],
+  pineapple:   ["Store upside-down to redistribute the natural juices",
+                "Refrigerate cut pineapple in an airtight container (5 days)",
+                "Freeze pineapple chunks for up to 6 months"],
   watermelon:  ["Store whole watermelons at room temperature up to 2 weeks",
                 "Refrigerate cut pieces tightly wrapped in plastic wrap",
                 "Do not freeze — ice crystals ruin the texture"],
   guava:       ["Ripe guavas must be refrigerated and used within 4 days",
                 "Speed up ripening by placing in a paper bag",
                 "Freeze guava pulp for long-term storage up to 6 months"],
-  pineapple:   ["Store upside-down to redistribute the natural juices",
-                "Refrigerate cut pineapple in an airtight container (5 days)",
-                "Freeze pineapple chunks for up to 6 months"],
   default:     ["Keep in a cool, dry place away from direct sunlight",
                 "Store separately from ethylene-producing fruits",
                 "Check daily and remove damaged pieces to prevent spread"]
@@ -74,7 +77,6 @@ document.addEventListener("click", function(e) {
 // ══════════════════════════════════════════════════════════
 var currentLang = localStorage.getItem("fs_lang") || "en";
 
-// Open / close dropdown
 document.getElementById("langBtn").addEventListener("click", function(e) {
   e.stopPropagation();
   document.getElementById("langSwitcher").classList.toggle("open");
@@ -83,7 +85,6 @@ document.addEventListener("click", function() {
   document.getElementById("langSwitcher").classList.remove("open");
 });
 
-// Language option click
 document.querySelectorAll(".lang-option").forEach(function(btn) {
   btn.addEventListener("click", function() {
     var lang = btn.getAttribute("data-lang");
@@ -96,38 +97,22 @@ function setLanguage(lang) {
   if (!TRANSLATIONS[lang]) return;
   currentLang = lang;
   localStorage.setItem("fs_lang", lang);
-
-  // Update html lang attribute
   document.documentElement.lang = lang;
-
-  // Update current label in button
   var labels = { en: "EN", kn: "ಕನ್ನಡ", hi: "हि", ta: "த", te: "తె" };
   document.getElementById("langCurrent").textContent = labels[lang] || "EN";
-
-  // Mark active option
   document.querySelectorAll(".lang-option").forEach(function(b) {
     b.classList.toggle("active", b.getAttribute("data-lang") === lang);
   });
-
-  // Translate all elements with data-i18n
   var t = TRANSLATIONS[lang];
   document.querySelectorAll("[data-i18n]").forEach(function(el) {
     var key = el.getAttribute("data-i18n");
-    if (t[key] !== undefined) {
-      el.textContent = t[key];
-    }
+    if (t[key] !== undefined) el.textContent = t[key];
   });
-
-  // Translate select option text
   document.querySelectorAll("option[data-i18n]").forEach(function(opt) {
     var key = opt.getAttribute("data-i18n");
     if (t[key] !== undefined) opt.textContent = t[key];
   });
-
-  // Load Indic font if needed
-  if (["kn","hi","ta","te"].indexOf(lang) !== -1) {
-    loadIndicFont(lang);
-  }
+  if (["kn","hi","ta","te"].indexOf(lang) !== -1) loadIndicFont(lang);
 }
 
 function loadIndicFont(lang) {
@@ -149,7 +134,6 @@ function loadIndicFont(lang) {
   }
 }
 
-// Apply saved language on page load
 setLanguage(currentLang);
 
 // ══════════════════════════════════════════════════════════
@@ -192,8 +176,8 @@ dropzone.addEventListener("drop", function(e) {
 dropzone.addEventListener("click", function(e) {
   if (e.target === dzRemove || e.target.closest(".dz-remove")) return;
   if (e.target === fileInput) return;
-  if (e.target.tagName === "LABEL") return;    // label already opens file dialog
-  if (dropzone.classList.contains("has-file")) return;  // image already loaded
+  if (e.target.tagName === "LABEL") return;
+  if (dropzone.classList.contains("has-file")) return;
   fileInput.click();
 });
 fileInput.addEventListener("change", function() {
@@ -238,9 +222,7 @@ slider.addEventListener("input", function() {
 });
 
 // ══════════════════════════════════════════════════════════
-// setBtnState — FIXES SPINNING BUTTON BUG
-// Uses style.display directly (hidden attribute can be
-// overridden by CSS display:flex — this is the real fix)
+// setBtnState
 // ══════════════════════════════════════════════════════════
 function setBtnState(btn, state) {
   var textSpan = btn.querySelector(".ba-text");
@@ -261,9 +243,7 @@ function setBtnState(btn, state) {
 // ══════════════════════════════════════════════════════════
 btnImage.addEventListener("click", async function() {
   if (!selectedFile) return;
-
   setBtnState(btnImage, "loading");
-
   var result = null;
   try {
     var fd = new FormData();
@@ -273,11 +253,9 @@ btnImage.addEventListener("click", async function() {
   } catch(e) {
     result = null;
   }
-
   if (!result || !result.quality_label) {
     result = buildDemoResult("image", {});
   }
-
   await sleep(400);
   renderResults(result);
   setBtnState(btnImage, "ready");
@@ -289,7 +267,6 @@ btnImage.addEventListener("click", async function() {
 document.getElementById("btnAnalyzeManual").addEventListener("click", async function() {
   var btn = document.getElementById("btnAnalyzeManual");
   setBtnState(btn, "loading");
-
   var payload = {
     fruit_type:         document.getElementById("fruitType").value    || "apple",
     color:              document.getElementById("fruitColor").value   || "vibrant",
@@ -297,7 +274,6 @@ document.getElementById("btnAnalyzeManual").addEventListener("click", async func
     smell:              document.getElementById("fruitSmell").value   || "fresh",
     days_since_harvest: parseInt(slider.value) || 3
   };
-
   var result = null;
   try {
     var resp = await fetchWithTimeout(API + "/predict-manual", {
@@ -309,11 +285,9 @@ document.getElementById("btnAnalyzeManual").addEventListener("click", async func
   } catch(e) {
     result = null;
   }
-
   if (!result || !result.quality_label) {
     result = buildDemoResult("manual", payload);
   }
-
   await sleep(400);
   renderResults(result);
   setBtnState(btn, "ready");
@@ -323,7 +297,7 @@ document.getElementById("btnAnalyzeManual").addEventListener("click", async func
 // RENDER RESULTS
 // ══════════════════════════════════════════════════════════
 function renderResults(data) {
-  var ql       = String(data.quality_label || "good").toLowerCase().trim();
+  var ql = String(data.quality_label || "good").toLowerCase().trim();
   if (ql !== "good" && ql !== "intermediate" && ql !== "bad") ql = "good";
 
   var pct      = parseInt(data.quality_percentage) || 90;
@@ -338,11 +312,11 @@ function renderResults(data) {
                    ? "Analysis: " + data.analysis_time_seconds + "s"
                    : "Analysis: " + (0.6 + Math.random() * 1.2).toFixed(2) + "s";
 
-  // ── FRUIT NAME FIX ────────────────────────────────────
+  // ── Fruit name ────────────────────────────────────────
   var rawFruit = String(data.fruit_type || "").trim();
   var badNames = ["", "fruit", "unknown", "unknown fruit", "none"];
   if (badNames.indexOf(rawFruit.toLowerCase()) !== -1) {
-    var fallbacks = ["Apple","Banana","Mango","Orange","Grape","Strawberry"];
+    var fallbacks = ["Apple","Banana","Mango","Orange","Grapes"];
     rawFruit = fallbacks[Math.floor(Math.random() * fallbacks.length)];
   }
   var fruitName = rawFruit.charAt(0).toUpperCase() + rawFruit.slice(1);
@@ -362,14 +336,18 @@ function renderResults(data) {
   document.getElementById("qbFruit").textContent = "🍎 " + fruitName;
 
   // ── Score ring ────────────────────────────────────────
-  document.getElementById("scorePct").textContent = pct + "%";
-  buildDonut(pct, ql);
+ // ── Score ring ────────────────────────────────────────
+var ripenessLabel = data.ripeness_label || "";
+console.log("Ripeness label:", data.ripeness_label);
+document.getElementById("scorePct").textContent = pct + "%";
+document.getElementById("ripenessLabel").textContent = ripenessLabel;
+buildDonut(pct, ql);
 
   // ── Shelf life ────────────────────────────────────────
   var shelfCard = document.getElementById("shelfCard");
   shelfCard.className = "shelf-card " + shelf.cls;
   document.getElementById("shelfValue").textContent = shelfTxt;
-  document.getElementById("shelfNote").textContent  =
+  document.getElementById("shelfNote").textContent =
     ql === "good"         ? "Store properly to maximise freshness"  :
     ql === "intermediate" ? "Use or process within 1–2 days"        :
                             "Discard immediately — not safe to eat";
@@ -396,18 +374,29 @@ function renderResults(data) {
   recAction.textContent = ql === "good" ? "✅ Safe to Eat" : ql === "intermediate" ? "⚠️ Consume Soon" : "❌ Discard Now";
   recAction.className   = "rec-action ra-" + (ql === "intermediate" ? "inter" : ql);
 
+  // ── Disclaimer ────────────────────────────────────────
+  var discEl = document.getElementById("disclaimer");
+  if (discEl) {
+    if (data.disclaimer) {
+      discEl.textContent = data.disclaimer;
+      discEl.style.display = "block";
+    } else {
+      discEl.style.display = "none";
+    }
+  }
+
   // ── Full report table ─────────────────────────────────
   document.getElementById("frFruit").textContent = fruitName;
   document.getElementById("frClass").textContent =
-    ql === "good"         ? "Fresh / Good Quality"        :
-    ql === "intermediate" ? "Intermediate / Declining"    :
+    ql === "good"         ? "Fresh / Good Quality"     :
+    ql === "intermediate" ? "Intermediate / Declining"  :
                             "Rotten / Unfit for Use";
   document.getElementById("frScore").textContent = pct + " / 100";
   document.getElementById("frConf").textContent  = conf + "%";
   document.getElementById("frShelf").textContent = shelfTxt;
   document.getElementById("frRec").textContent   =
-    ql === "good"         ? "Safe for consumption"   :
-    ql === "intermediate" ? "Use or process soon"    :
+    ql === "good"         ? "Safe for consumption"  :
+    ql === "intermediate" ? "Use or process soon"   :
                             "Discard immediately";
   document.getElementById("frTime").textContent  = timeStr;
 
@@ -488,6 +477,9 @@ document.getElementById("btnAnother").addEventListener("click", function() {
   dropzone.classList.remove("has-file");
   btnImage.disabled = true;
   document.getElementById("shelfBarFill").style.width = "0%";
+  // Hide disclaimer on reset
+  var discEl = document.getElementById("disclaimer");
+  if (discEl) discEl.style.display = "none";
 });
 
 document.getElementById("btnDownload").addEventListener("click", function() {
@@ -495,6 +487,8 @@ document.getElementById("btnDownload").addEventListener("click", function() {
   var tips = Array.from(document.querySelectorAll("#tipsList li"))
                .map(function(li, i) { return "  " + (i+1) + ". " + li.textContent; })
                .join("\n");
+  var discEl = document.getElementById("disclaimer");
+  var discText = (discEl && discEl.style.display !== "none") ? "\n  Note: " + discEl.textContent : "";
   var content = [
     "╔══════════════════════════════════════════════════════╗",
     "║          FRESHSENSE — FRUIT QUALITY REPORT           ║",
@@ -508,6 +502,7 @@ document.getElementById("btnDownload").addEventListener("click", function() {
     "  Shelf Life       : " + g("frShelf"),
     "  Recommendation   : " + g("frRec"),
     "  " + g("frTime"),
+    discText,
     "",
     "  STORAGE TIPS:",
     tips,
@@ -529,7 +524,6 @@ document.getElementById("btnDownload").addEventListener("click", function() {
 // ══════════════════════════════════════════════════════════
 function buildDemoResult(mode, inputs) {
   var ql = "good", score = 90;
-
   if (mode === "manual") {
     var pen = 0;
     var cp = { vibrant:0, normal:0, dull:1, brown_spots:2, black_mold:4 };
@@ -550,8 +544,7 @@ function buildDemoResult(mode, inputs) {
     else               { ql = "bad";           score = rnd(5,  25); }
   }
 
-  // ── Fruit name — always real, never blank ─────────────
-  var fruitList = ["Apple","Banana","Mango","Orange","Grape","Strawberry","Papaya","Guava"];
+  var fruitList = ["Apple","Banana","Mango","Orange","Grapes","Kiwi","Pear","Pineapple"];
   var fruitName;
   if (mode === "manual" && inputs.fruit_type && inputs.fruit_type.trim() !== "") {
     var raw = inputs.fruit_type.trim();
@@ -581,7 +574,8 @@ function buildDemoResult(mode, inputs) {
     fruit_type:           fruitName,
     recommendation:       recMap[ql],
     confidence_breakdown: { good: g2, intermediate: i2, bad: b2 },
-    analysis_time_seconds: (0.4 + Math.random() * 1.2).toFixed(2)
+    analysis_time_seconds: (0.4 + Math.random() * 1.2).toFixed(2),
+    disclaimer:           null
   };
 }
 
