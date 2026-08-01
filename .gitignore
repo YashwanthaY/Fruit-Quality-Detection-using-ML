@@ -24,13 +24,11 @@ env/
 *.pkl
 *.joblib
 *.ckpt
-*.pb
 
 # -----------------------------
 # TensorFlow / PyTorch model folders
 # -----------------------------
 backend/model/fruit_saved_model_old/
-backend/model/fruit_saved_model/
 backend/uploads/
 models/
 weights/
@@ -75,3 +73,4 @@ Thumbs.db
 # -----------------------------
 .env
 .env.local
+backend/model/fruit_saved_model_OLD_BACKUP/
