@@ -3,7 +3,7 @@
    ══════════════════════════════════════════════════════════ */
 "use strict";
 
-const API = "http://localhost:5000";
+const API = "https://fruit-quality-detection-using-ml-production.up.railway.app";
 
 // ── Storage tips ──────────────────────────────────────────
 const TIPS = {
