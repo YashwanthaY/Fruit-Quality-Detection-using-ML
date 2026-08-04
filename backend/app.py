@@ -11,7 +11,7 @@ from flask_cors import CORS
 from predict import predict_from_image, predict_from_manual
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}})
+CORS(app, resources={r"/*": {"origins": "https://freshsense-app.netlify.app"}})
 app.config["MAX_CONTENT_LENGTH"] = 20 * 1024 * 1024
 
 # Upload folder inside backend
