@@ -1,6 +1,7 @@
 """
-FreshSense — predict.py (v4 FINAL)
+FreshSense — predict.py (v4.1)
 Supports: 16 classes, ripeness % score, TFSMLayer with 'serve' endpoint
+Fix (this version): confidence-threshold-based disclaimer, NameError fix in predict_from_manual
 """
 
 import os
@@ -69,7 +70,9 @@ LABEL_MAP = {
     "rottenpineapple":  ("Pineapple",   "bad"),
 }
 
-LOW_CONFIDENCE_CLASSES = ["kiwi", "pear", "pineapple"]
+# Confidence threshold below which we warn the user to verify visually,
+# regardless of which fruit name ended up being displayed.
+LOW_CONFIDENCE_THRESHOLD = 50
 
 # ── Model + class names ───────────────────────────────────
 _model       = None
@@ -250,7 +253,9 @@ def predict_from_manual(inputs: dict) -> dict:
     pct  = max(5, int(100 - (pen/15)*100))
     conf = min(95, 65 + abs(pen-7)*3)
 
-    if quality_pct >= 80:
+    # FIX: this previously referenced the undefined name `quality_pct`,
+    # which raised a NameError on every call. It should use `pct`.
+    if pct >= 80:
         ripeness_label = "Peak Freshness"
     elif pct >= 55:
         ripeness_label = "Good — Slightly Past Peak"
@@ -288,10 +293,15 @@ def _build_result(quality_label, quality_pct, ripeness_label,
                   conf_score, fruit_type, good_pct, int_pct, bad_pct) -> dict:
     shelf      = SHELF_LIFE.get(quality_label, SHELF_LIFE["good"])
     tips       = STORAGE_TIPS.get(fruit_type.lower(), STORAGE_TIPS["default"])
+
+    # FIX: disclaimer now fires based on actual model confidence,
+    # not on whether the *displayed* fruit name happens to be one of
+    # the known-weak classes. This catches low-confidence calls that
+    # get misclassified into a different fruit's label too.
     disclaimer = None
-    if quality_label == "bad" and fruit_type.lower() in LOW_CONFIDENCE_CLASSES:
+    if quality_label == "bad" and conf_score < LOW_CONFIDENCE_THRESHOLD:
         disclaimer = (
-            f"⚠️ Note: Rotten {fruit_type} detection has limited training data. "
+            f"⚠️ Note: This prediction has low model confidence ({conf_score}%). "
             f"Please verify visually — check for soft spots, mold, or bad smell."
         )
     return {
