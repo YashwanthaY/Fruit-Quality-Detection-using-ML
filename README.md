@@ -3,32 +3,32 @@
 ![Python](https://img.shields.io/badge/Python-3.11-blue?style=flat-square&logo=python)
 ![TensorFlow](https://img.shields.io/badge/TensorFlow-2.16-orange?style=flat-square&logo=tensorflow)
 ![Flask](https://img.shields.io/badge/Flask-3.0-black?style=flat-square&logo=flask)
-![Accuracy](https://img.shields.io/badge/Accuracy-99%25-brightgreen?style=flat-square)
+![Accuracy](https://img.shields.io/badge/Test%20Accuracy-95.9%25-brightgreen?style=flat-square)
 ![Languages](https://img.shields.io/badge/Languages-5-purple?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 
 > **Know Your Fruit. Protect Your Harvest.**
 >
 > A full-stack AI web application for real-time fruit quality detection using deep learning —
-> built to help Indian farmers reduce post-harvest losses.
+> built to help reduce post-harvest losses.
+
+**🔗 Live Demo:** [freshsense-app.netlify.app](https://freshsense-app.netlify.app)
+**🔗 API:** [fruit-quality-detection-using-ml-production.up.railway.app](https://fruit-quality-detection-using-ml-production.up.railway.app)
 
 ---
 
 ## 📸 Screenshots
 
-### 🏠 Homepage
-![FreshSense Homepage](screenshots/homepage.png)
-
-### 🔍 Quality Detection Result
-![FreshSense Detection Result](screenshots/detection.png)
+### 🏠 Upload → Instant Result
+![FreshSense homepage and detection result](screenshots/detection.png)
 
 ---
 
 ## 📌 Problem Statement
 
-Post-harvest fruit losses cause significant economic damage to farmers and supply chains across India.
+Post-harvest fruit losses cause significant economic damage to farmers and supply chains.
 Manual quality inspection is slow, inconsistent, and expensive.
-FreshSense uses a Convolutional Neural Network (CNN) to classify fruit quality in under 2 seconds —
+FreshSense uses a Convolutional Neural Network (CNN) to classify fruit quality in under a second —
 helping farmers, food distributors, and quality inspectors make faster, more accurate decisions.
 
 ---
@@ -37,17 +37,19 @@ helping farmers, food distributors, and quality inspectors make faster, more acc
 
 | Feature | Description |
 |---|---|
-| 🔍 AI Quality Detection | CNN (MobileNetV2) classifies fruit as Good / Intermediate / Bad |
+| 🔍 AI Quality Detection | CNN (MobileNetV2, transfer learning) classifies fruit as Good / Intermediate / Bad |
 | 📅 Shelf Life Estimation | Predicts remaining days of freshness |
+| 🍏 Ripeness Score | Fresh-vs-rotten confidence ratio, scaled 5–98% |
 | 🛡️ Storage Tips | Per-fruit expert storage and protection advice |
 | 📊 Quality Score | Animated donut chart showing freshness percentage |
 | 📈 Confidence Chart | Bar chart showing model certainty per class |
+| ⚠️ Low-Confidence Disclaimer | Automatically flags any "bad" result under 50% model confidence for manual verification |
 | 📋 Downloadable Report | Export full analysis to .txt file |
 | ✏️ Manual Input Mode | Describe fruit by colour, texture, smell, age — no image needed |
 | 🌍 5 Languages | English, Kannada, Hindi, Tamil, Telugu |
 | 🌐 Multi-User Support | Stateless REST API supports unlimited concurrent users |
 | 📱 Responsive Design | Works on desktop, tablet, and mobile |
-| 🍎 13 Fruit Types | Apple, Banana, Orange, Mango, Grapes, Pineapple, Watermelon, Kiwi, Pear, Pomegranate + more |
+| 🍎 8 Fruit Types | Apple, Banana, Grapes, Kiwi, Mango, Orange, Pear, Pineapple (fresh/rotten each — 16 classes total) |
 
 ---
 
@@ -68,15 +70,29 @@ Fruit-Quality-Detection/
 │   ├── predict.py              ← AI prediction logic
 │   ├── train_model.py          ← MobileNetV2 CNN training script
 │   ├── requirements.txt        ← Python dependencies
+│   ├── Procfile                ← Gunicorn start command (Railway)
 │   └── model/
 │       ├── fruit_saved_model/  ← Trained model (SavedModel format)
-│       └── class_names.txt     ← 13 fruit class labels
+│       └── class_names.txt     ← 16 fruit class labels
 │
 ├── dataset/
 │   └── README.md               ← Dataset download instructions
 │
+├── screenshots/                ← README screenshots
+│
 └── README.md                   ← This file
 ```
+
+---
+
+## 🌐 Live Deployment
+
+| Layer | Platform | URL |
+|---|---|---|
+| Frontend | Netlify | [freshsense-app.netlify.app](https://freshsense-app.netlify.app) |
+| Backend API | Railway | [fruit-quality-detection-using-ml-production.up.railway.app](https://fruit-quality-detection-using-ml-production.up.railway.app) |
+
+CORS on the backend is restricted to the Netlify origin only.
 
 ---
 
@@ -84,8 +100,8 @@ Fruit-Quality-Detection/
 
 ### Step 1 — Clone the repository
 ```bash
-git clone https://github.com/your-username/Fruit-Quality-Detection.git
-cd Fruit-Quality-Detection
+git clone https://github.com/YashwanthaY/Fruit-Quality-Detection-using-ML.git
+cd Fruit-Quality-Detection-using-ML
 ```
 
 ### Step 2 — Create Python 3.11 virtual environment
@@ -118,6 +134,8 @@ python -m http.server 8080
 http://localhost:8080
 ```
 
+> Note: `app.py` locally allows CORS from `*` only if you edit it back for local testing — the deployed version restricts origins to the Netlify domain. If running fully locally, point `frontend/script.js` at `http://localhost:5000` instead of the Railway URL.
+
 ---
 
 ## 🧠 Model Architecture
@@ -131,31 +149,45 @@ http://localhost:8080
 | Optimizer | Adam (Phase 1: 1e-3, Phase 2: 1e-5) |
 | Epochs | 25 (EarlyStopping on val_accuracy) |
 | Augmentation | Flip, Rotate, Zoom |
-| Format | TensorFlow SavedModel |
+| Format | TensorFlow SavedModel (loaded via `TFSMLayer`, `call_endpoint="serve"`) |
+| Training environment | Kaggle, dual T4 GPUs (`tf.distribute.MirroredStrategy`) |
 
 ---
 
 ## 📊 Model Accuracy
 
-| Dataset | Accuracy |
+| Dataset | Result |
 |---|---|
-| Training | ~99% |
-| Validation | **99.22%** |
+| Held-out test set (leak-free, 50 images/class) | **95.90%** |
 
-### Per-Class Results
+An earlier version of this model reported 99.25% accuracy, but that number was invalid due to
+train/test data leakage (test images were copies of training images). The dataset pipeline was
+rebuilt with a genuine hold-out split, and 95.90% is the real, leak-free test accuracy.
 
-| Class | Precision | Recall | F1-Score |
-|---|---|---|---|
-| freshapples | 0.98 | 1.00 | 0.99 |
-| freshbanana | 1.00 | 1.00 | 1.00 |
-| freshoranges | 1.00 | 1.00 | 1.00 |
-| rottenapples | 1.00 | 0.99 | 0.99 |
-| rottenbanana | 1.00 | 1.00 | 1.00 |
-| rottenoranges | 1.00 | 1.00 | 1.00 |
+---
+
+## ⚠️ Known Limitations
+
+Being upfront about where the model is weaker, rather than leaving it ambiguous:
+
+- **`rottenpineapple` is 100% synthetic.** No public dataset of real rotten pineapple photos was
+  available, so this class is trained on programmatically darkened fresh-pineapple images. Treat
+  predictions for this class with caution.
+- **`rottenkiwi` and `rottenpear` have very few real test photos** (9 and 15 respectively), sourced
+  from a secondary Kaggle dataset. Training data for these classes is larger, but real-world test
+  coverage is thin.
+- **`freshmango`, `freshkiwi`, `freshpear`, and `freshpineapple`** have comparatively few real photos
+  (36–50 each) versus 1,400+ for apple/banana/orange, so these classes rely more heavily on
+  augmentation and may be less robust to unusual lighting or backgrounds.
+- To compensate, the API flags any "bad" (rotten) prediction with **model confidence under 50%**
+  with a disclaimer asking the user to verify visually — regardless of which fruit the model landed on.
 
 ---
 
 ## 🌐 API Endpoints
+
+### `GET /health`
+Health check.
 
 ### `POST /predict`
 Upload a fruit image for AI analysis.
@@ -165,20 +197,22 @@ Upload a fruit image for AI analysis.
 **Response:**
 ```json
 {
-  "quality_label":       "good",
-  "quality_percentage":  99,
-  "confidence_score":    99,
-  "shelf_life_days":     "7-10 Days",
-  "storage_tips":        ["Store in fridge crisper drawer", "..."],
-  "fruit_type":          "Apple",
-  "recommendation":      "Safe for immediate consumption.",
-  "confidence_breakdown": { "good": 99, "intermediate": 1, "bad": 0 },
-  "analysis_time_seconds": 0.84
+  "quality_label":        "good",
+  "quality_percentage":   98,
+  "ripeness_label":       "Peak Freshness",
+  "confidence_score":     98,
+  "shelf_life_days":      "7-10 Days",
+  "storage_tips":         ["Store in fridge crisper drawer", "..."],
+  "fruit_type":           "Apple",
+  "recommendation":       "Safe for immediate consumption.",
+  "confidence_breakdown": { "good": 98, "intermediate": 1, "bad": 1 },
+  "disclaimer":           null,
+  "analysis_time_seconds": 0.02
 }
 ```
 
 ### `POST /predict-manual`
-Describe fruit attributes as JSON.
+Describe fruit attributes as JSON — no image required.
 
 **Request:**
 ```json
@@ -201,7 +235,7 @@ FreshSense is designed for unlimited concurrent users:
 - **No shared mutable state** between requests
 - Uploaded images saved to **unique temp files** (UUID-named) and deleted after prediction
 - ML model loaded **once at startup** — read-only during inference (thread-safe)
-- For production: deploy with **Gunicorn** (`gunicorn -w 4 app:app`)
+- Production runs on **Gunicorn** (`gunicorn app:app --bind 0.0.0.0:$PORT --timeout 120`) via Railway
 
 ---
 
@@ -221,11 +255,11 @@ FreshSense is designed for unlimited concurrent users:
 
 | Layer | Technology |
 |---|---|
-| Frontend | HTML5, CSS3, Vanilla JS, Chart.js 4 |
-| Backend | Python 3.11, Flask 3.0, Flask-CORS |
-| ML Model | TensorFlow 2.16, Keras, MobileNetV2 |
-| Dataset | Fruits Fresh & Rotten (Kaggle) + Fruit Recognition (Kaggle) |
-| Training | Google Colab (T4 GPU) |
+| Frontend | HTML5, CSS3, Vanilla JS, Chart.js 4 — deployed on Netlify |
+| Backend | Python 3.11, Flask 3.0, Flask-CORS, Gunicorn — deployed on Railway |
+| ML Model | TensorFlow 2.16, Keras, MobileNetV2 transfer learning |
+| Dataset | Fruits Fresh & Rotten (Kaggle) + a secondary Kaggle dataset for kiwi/pear rotten photos |
+| Training | Kaggle Notebooks, dual T4 GPUs |
 
 ---
 
@@ -234,29 +268,33 @@ FreshSense is designed for unlimited concurrent users:
 **Primary Dataset:** Fresh and Rotten Fruits — Kaggle
 https://www.kaggle.com/datasets/sriramr/fruits-fresh-and-rotten-for-classification
 
-**Secondary Dataset:** Fruit and Vegetable Image Recognition — Kaggle
-https://www.kaggle.com/datasets/kritikseth/fruit-and-vegetable-image-recognition
+**Secondary Dataset (real rotten kiwi/pear photos):**
+https://www.kaggle.com/datasets/nourabdoun/fruits-quality-fresh-vs-rotten
 
-See `dataset/README.md` for download instructions.
+See `dataset/README.md` for full download instructions.
+
+**Training notebook:** https://www.kaggle.com/code/yashwanthagastya12/fruit-quality-detection-ml
 
 ---
 
-## 🔮 Future Improvements
+## 🔮 Roadmap
 
-- [ ] Deploy online with live URL for farmers
+- [x] Deploy online with live URL (Netlify + Railway)
+- [x] Fix confidence-based low-confidence disclaimer
+- [x] Lock down CORS to production frontend only
+- [ ] Price suggestion engine — Grade A/B/C market pricing
+- [ ] Three user modes: farmer / market / home
 - [ ] Mobile app (Android/iOS) for field use
 - [ ] Disease detection (not just freshness)
 - [ ] Real-time webcam analysis
-- [ ] Multi-fruit batch processing
 - [ ] User accounts and history tracking
-- [ ] More Indian regional languages
 
 ---
 
 ## 👤 Author
 
 **Yashwantha Y**
-Student — Computer Science & Engineering
+Student — Computer Science (AI/ML)
 
 📧 yashwanthagastya12@gmail.com
 🔗 [LinkedIn](https://linkedin.com/in/your-profile)
@@ -272,7 +310,6 @@ MIT License — free to use, modify, and distribute.
 
 ## 🙏 Acknowledgements
 
-- Dataset by **sriramr** and **kritikseth** on Kaggle
+- Dataset by **sriramr** and **nourabdoun** on Kaggle
 - MobileNetV2 architecture by Google
-- Trained on Google Colab (free T4 GPU)
-- Built with ❤️ for Indian farmers 🌾
+- Trained on Kaggle Notebooks (free dual T4 GPUs)
